@@ -15,7 +15,7 @@ type domElement = {
 
 type NodeType = domText | domElement;
 
-type AttrMap = Map<string, string>;
+export type AttrMap = Map<string, string>;
 
 // Functions for creating Nodes
 export const textNode = (txt: string): Node => {
