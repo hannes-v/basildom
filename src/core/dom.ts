@@ -8,7 +8,7 @@ export interface Node {
 
 type domText = string;
 
-type domElement = {
+export type domElement = {
 	tag_name: string;
 	attrs: AttrMap;
 };

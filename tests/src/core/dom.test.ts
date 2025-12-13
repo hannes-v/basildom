@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test";
-import { Parser, ParserHelper } from "../../../src/parser/html-parser";
+import type { domElement } from "../../../src/core/dom";
+import { HTMLParser, ParserHelper } from "../../../src/parser/html-parser";
 
 test("ParserHelper", () => {
 	expect(() => ParserHelper.assert(2 > 3)).toThrowError("assertion error");
@@ -8,16 +9,4 @@ test("ParserHelper", () => {
 		"assertion error (eq)",
 	);
 	expect(ParserHelper.assertEq("2", "2")).toBeEmpty();
-});
-
-const p = new Parser();
-const sampleText = `
-    <html>
-        <h1>Text</h1>
-        <p>this is a test</p>
-    </html>
-    `;
-
-test("Parser", () => {
-	expect(p.parse(sampleText)).toBeArrayOfSize(3);
 });

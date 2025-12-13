@@ -9,11 +9,43 @@ export const ParserHelper = {
 	},
 };
 
-export class Parser {
-	textAsArray: string[] = [""];
-	currentChar = 0;
+export interface ParserInterface {
+	/**
+	 * the currently observed character
+	 */
+	currentCharIndex: number;
+	/**
+	 * transforms the given input into Nodes
+	 * @param input text to parse
+	 * @returns a Node tree
+	 */
+	parse: (input: string) => Node[];
+	/**
+	 * consumes characters
+	 * @param iterations number of characters to consume
+	 * @returns all consumed characters as string
+	 */
+	consume: (iterations: number) => string;
+	/**
+	 * provides a look at the character without consuming it
+	 * @param offset from the current position
+	 * @default offset : 1
+	 * @returns the string
+	 */
+	peek: (offset: number) => string;
+}
 
-	parseAttributeValue = (): string => {
+export class HTMLParser {
+	textAsArray: string[] = [""];
+	currentCharIndex = 0;
+	// TODO: performance optimization (dont calculate everytime)
+	// peek = "";
+
+	private setTextToParse = (text: string): void => {
+		this.textAsArray = text.split("");
+	};
+
+	private parseAttributeValue = (): string => {
 		const openQuote = this.consume();
 		ParserHelper.assert(openQuote === '"');
 		const value = this.consumeWhile((c) => c !== openQuote);
@@ -21,21 +53,28 @@ export class Parser {
 		ParserHelper.assertEq(openQuote, closeQuote);
 		return value;
 	};
-	parseNodes() {
+	private parseNodes() {
 		const nodes = [];
 		while (true) {
 			this.consumeWhitespace();
 			if (this.eof()) {
 				break;
 			}
+			// TODO: write a function for that:
+			if (this.peek() === "<" && this.peek(1) === "/") {
+				break; // there are no more children
+			}
 			nodes.push(this.parseNode());
 		}
 		return nodes;
 	}
-	parseAttributes = (): AttrMap => {
-		const attributes: AttrMap = new Map();
+	private parseAttributes = (): AttrMap => {
+		const attributes: AttrMap = new Map<string, string>();
 		while (!this.eof() && this.peek() !== ">") {
+			this.consumeWhitespace();
+			if (this.peek() === ">") break; // in case of whitespace before "<"
 			const name = this.parseName();
+
 			this.expect("=");
 			const value = this.parseAttributeValue();
 
@@ -45,13 +84,8 @@ export class Parser {
 		return attributes;
 	};
 
-	private setTextToParse = (text: string): void => {
-		this.textAsArray = text.split("");
-	};
-
-	peek = (): string => {
-		const peekIndex = this.currentChar + 1;
-
+	private peek = (offset = 0): string => {
+		const peekIndex = this.currentCharIndex + offset;
 		if (peekIndex >= this.textAsArray.length) {
 			throw new Error("End of input reached when peeking next character.");
 		}
@@ -59,27 +93,33 @@ export class Parser {
 		return this.textAsArray[peekIndex] as string;
 	};
 
-	consume = (): string => {
-		const char = this.peek();
-		this.currentChar++;
-		return char;
-	};
-
-	eof = (): boolean => this.currentChar > this.textAsArray.length;
-
-	consumeWhile = (test: (st: string) => boolean): string => {
-		const result: string[] = [];
-		while (!this.eof() && test(this.consume())) {
-			result.push(this.consume());
+	private consume = (iterations = 1): string => {
+		const result = [];
+		for (let i = 0; i < iterations; i++) {
+			result.push(this.peek());
+			this.currentCharIndex++;
 		}
 		return result.join("");
 	};
 
-	consumeWhitespace = (): void => {
-		this.consumeWhile((st) => st === " ");
+	private eof = (): boolean => this.currentCharIndex >= this.textAsArray.length;
+
+	private consumeWhile = (test: (st: string) => boolean): string => {
+		const result: string[] = [];
+		while (!this.eof() && test(this.peek())) {
+			result.push(this.consume());
+		}
+		console.log(`result: ${result.join("")}`);
+		return result.join("");
 	};
 
-	parseName = (): string => {
+	private consumeWhitespace = (): void => {
+		this.consumeWhile(
+			(c) => c === " " || c === "\n" || c === "\t" || c === "\r",
+		);
+	};
+
+	private parseName = (): string => {
 		return this.consumeWhile((c) => {
 			return (
 				(c >= "a" && c <= "z") ||
@@ -90,24 +130,25 @@ export class Parser {
 	};
 
 	private expect = (c: string): void => {
-		for (const char in c.split("")) {
-			if (char !== this.textAsArray[this.currentChar]) {
+		for (const char of c.split("")) {
+			console.log(`${char} --- ${this.textAsArray[this.currentCharIndex]}`);
+			if (char !== this.textAsArray[this.currentCharIndex]) {
 				throw new Error("expection failed");
 			} else {
-				this.currentChar++;
+				this.currentCharIndex++;
 			}
 		}
 	};
 
-	parseNode = (): Node => {
-		if (this.textAsArray[this.currentChar] === "<") {
+	private parseNode = (): Node => {
+		if (this.peek() === "<") {
 			return this.parseElement();
 		} else {
 			return this.parseText();
 		}
 	};
 
-	parseElement = (): Node => {
+	private parseElement = (): Node => {
 		// opening tag
 		this.expect("<");
 		const tag_name = this.parseName();
@@ -125,14 +166,17 @@ export class Parser {
 		return elemNode(tag_name, attrs, children);
 	};
 
-	parseText = (): Node => {
+	private parseText = (): Node => {
 		const txt = this.consumeWhile((c) => c !== "<");
 		return textNode(txt);
 	};
 
-	parse(src: string): Node[] {
+	public parse(src: string): Node[] {
+		this.currentCharIndex = 0;
 		this.setTextToParse(src);
-		return this.parseNodes();
+		const result = this.parseNodes();
+		console.log(result);
+		return result;
 	}
 }
 
