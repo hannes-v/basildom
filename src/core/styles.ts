@@ -14,16 +14,16 @@ type ID = string;
 type Class = string;
 
 type Declaration = {
-    name: string,
-    value: Value
+	name: string;
+	value: Value;
 };
 
-type Value = Keyword | Size | ColorValue
-type Keyword = string
-type Size = string
-type ColorValue {
-    r: number,
-    g: number,
-    b: number,
-    a: number
-}
+type Value = Keyword | Size | ColorValue;
+type Keyword = string;
+type Size = string;
+type ColorValue = {
+	r: number;
+	g: number;
+	b: number;
+	a: number;
+};

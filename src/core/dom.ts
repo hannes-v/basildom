@@ -18,14 +18,14 @@ type NodeType = domText | domElement;
 export type AttrMap = Map<string, string>;
 
 // Functions for creating Nodes
-export const textNode = (txt: string): Node => {
+export const createTextNote = (txt: string): Node => {
 	return {
 		children: [],
 		node_type: txt,
 	};
 };
 
-export const elemNode = (
+export const createElementNode = (
 	tagName: string,
 	attrs: AttrMap,
 	children: Node[],

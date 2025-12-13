@@ -1,4 +1,10 @@
-import { type AttrMap, elemNode, type Node, textNode } from "../core/dom";
+import {
+	type AttrMap,
+	createElementNode,
+	createTextNote,
+	type Node,
+} from "../core/dom";
+import { BaseParser } from "./base-parser";
 
 export const ParserHelper = {
 	assert: (b: boolean): void => {
@@ -10,10 +16,6 @@ export const ParserHelper = {
 };
 
 export interface ParserInterface {
-	/**
-	 * the currently observed character
-	 */
-	currentCharIndex: number;
 	/**
 	 * transforms the given input into Nodes
 	 * @param input text to parse
@@ -35,6 +37,101 @@ export interface ParserInterface {
 	peek: (offset: number) => string;
 }
 
+// new Parser:
+export class HTMLParser2 extends BaseParser<Node[]> {
+	private setTextToParse = (text: string): void => {
+		this.textAsArray = text.split("");
+	};
+
+	private parseAttributes = (): AttrMap => {
+		const attributes: AttrMap = new Map<string, string>();
+		while (!this.eof() && this.peek() !== ">") {
+			this.consumeWhitespace();
+			if (this.peek() === ">") break; // in case of whitespace before "<"
+			const name = this.parseName();
+
+			this.consumeExpected("=");
+			const value = this.parseAttributeValue();
+
+			attributes.set(name, value);
+		}
+
+		return attributes;
+	};
+	private parseAttributeValue = (): string => {
+		const openQuote = this.consume();
+		ParserHelper.assert(openQuote === '"');
+		const value = this.consumeWhile((c) => c !== openQuote);
+		const closeQuote = this.consume();
+		ParserHelper.assertEq(openQuote, closeQuote);
+		return value;
+	};
+
+	private parseName = (): string => {
+		return this.consumeWhile((c) => {
+			return (
+				(c >= "a" && c <= "z") ||
+				(c >= "A" && c <= "Z") ||
+				(c >= "0" && c <= "9")
+			);
+		});
+	};
+
+	private parseText = (): Node =>
+		createTextNote(this.consumeWhile((c) => c !== "<"));
+
+	private parseElement = (): Node => {
+		// opening tag
+		this.consumeExpected("<");
+		const tag_name = this.parseName();
+		const attrs = this.parseAttributes();
+		this.consumeExpected(">");
+
+		//children
+		const children = this.parseNodes();
+
+		// closing tag
+		this.consumeExpected("</");
+		this.consumeExpected(tag_name);
+		this.consumeExpected(">");
+
+		return createElementNode(tag_name, attrs, children);
+	};
+
+	private parseNode = (): Node =>
+		this.peek() === "<" ? this.parseElement() : this.parseText();
+
+	private parseNodes() {
+		const nodes = [];
+		while (!this.eof()) {
+			if (this.peekMultiple(2) === "</") {
+				break;
+			}
+
+			const node = this.parseNode();
+
+			if (typeof node.node_type === "string") {
+				if (node.node_type.trim().length === 0) {
+					continue;
+				}
+			}
+
+			nodes.push(node);
+		}
+		return nodes;
+	}
+	public override parse(src: string): Node[] {
+		this.currentIndex = 0;
+		this.setTextToParse(src);
+		const result = this.parseNodes();
+		console.log(result);
+		return result;
+	}
+}
+
+/**
+ * @deprecated use HTMLParser2 instead
+ */
 export class HTMLParser {
 	textAsArray: string[] = [""];
 	currentCharIndex = 0;
@@ -163,13 +260,11 @@ export class HTMLParser {
 		this.expect(tag_name);
 		this.expect(">");
 
-		return elemNode(tag_name, attrs, children);
+		return createElementNode(tag_name, attrs, children);
 	};
 
-	private parseText = (): Node => {
-		const txt = this.consumeWhile((c) => c !== "<");
-		return textNode(txt);
-	};
+	private parseText = (): Node =>
+		createTextNote(this.consumeWhile((c) => c !== "<"));
 
 	public parse(src: string): Node[] {
 		this.currentCharIndex = 0;
