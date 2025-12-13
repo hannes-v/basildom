@@ -1,15 +1,9 @@
 # basildom
 
-To install dependencies:
+Basildom is a toy browser engine designed for educational purposes with minimal dependencies. 
+Currently, it includes only an HTML parser.
 
-```bash
-bun install
-```
+🏗️ Under development
 
-To run:
+To install dependencies: `bun install`
 
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.2.18. [Bun](https://bun.sh) is a fast all-in-one JavaScript runtime.
