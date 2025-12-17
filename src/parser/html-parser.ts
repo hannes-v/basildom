@@ -39,10 +39,6 @@ export interface ParserInterface {
 
 // new Parser:
 export class HTMLParser2 extends BaseParser<Node[]> {
-	private setTextToParse = (text: string): void => {
-		this.textAsArray = text.split("");
-	};
-
 	private parseAttributes = (): AttrMap => {
 		const attributes: AttrMap = new Map<string, string>();
 		while (!this.eof() && this.peek() !== ">") {
@@ -65,16 +61,6 @@ export class HTMLParser2 extends BaseParser<Node[]> {
 		const closeQuote = this.consume();
 		ParserHelper.assertEq(openQuote, closeQuote);
 		return value;
-	};
-
-	private parseName = (): string => {
-		return this.consumeWhile((c) => {
-			return (
-				(c >= "a" && c <= "z") ||
-				(c >= "A" && c <= "Z") ||
-				(c >= "0" && c <= "9")
-			);
-		});
 	};
 
 	private parseText = (): Node =>

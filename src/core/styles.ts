@@ -1,19 +1,31 @@
-interface Stylesheet {
+export interface Stylesheet {
 	rules: Rule[];
 }
 
-interface Rule {
-	selectors: Selector[];
+export interface Rule {
+	sel: CSSSelector[];
 	declarations: Declaration[];
 }
 
-type Selector = TagName | ID | Class;
+export type CSSSelector = {
+	sort: SelectorSort;
+	name: string;
+};
+
+export enum SelectorSort {
+	TagName,
+	ID,
+	Class,
+	Universal,
+}
+
+export type CSSAttrMap = Map<string, string>;
 
 type TagName = string;
 type ID = string;
 type Class = string;
 
-type Declaration = {
+export type Declaration = {
 	name: string;
 	value: Value;
 };

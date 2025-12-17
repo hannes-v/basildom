@@ -42,6 +42,18 @@ export abstract class BaseParser<T> {
 		);
 	};
 
+	protected isLetter = (c: string) =>
+		(c >= "a" && c <= "z") || (c >= "A" && c <= "Z");
+
+	protected isNumber = (c: string) => c >= "0" && c <= "9";
+
+	protected isAlphaNumerical = (c: string) =>
+		this.isLetter(c) || this.isNumber(c);
+
+	protected parseName = (): string => {
+		return this.consumeWhile((c) => this.isAlphaNumerical(c));
+	};
+
 	protected consumeExpected = (c: string): void => {
 		if (this.peekMultiple(c.length) !== c) {
 			throw new Error("expection failed");
@@ -51,6 +63,10 @@ export abstract class BaseParser<T> {
 	};
 
 	protected eof = (): boolean => this.currentIndex >= this.textAsArray.length;
+
+	protected setTextToParse = (text: string): void => {
+		this.textAsArray = text.split("");
+	};
 
 	// generic class
 	abstract parse(input: string): T;
