@@ -36,6 +36,20 @@ export abstract class BaseParser<T> {
 		return result.join("");
 	};
 
+	/**
+	 * consumes a given character
+	 * if the character peek doesn't meet the requirements,
+	 * the function returns false without failing
+	 * (thats the main difference in comparison to consumeExpected)
+	 */
+	protected consumeIfMatches = (str: string): boolean => {
+		if (this.peek() === str) {
+			this.consume();
+			return true;
+		}
+		return false;
+	};
+
 	protected consumeWhitespace = (): void => {
 		this.consumeWhile(
 			(c) => c === " " || c === "\n" || c === "\t" || c === "\r",
