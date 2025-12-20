@@ -12,26 +12,36 @@ export enum QuotationMarks {
 class KVParser extends BaseParser<Map<string, string>> {
 	divider: string = "";
 	parseWhitespace: boolean = false;
-	endingCharacters: string[] = [];
+	stopCharacters: string[] = [];
+	pairSeperator: string | null = null;
 	allowedQuotes: QuotationMarks[] = [];
 
-	public enableQuotationMarks(marks: QuotationMarks[]): this {
-		this.allowedQuotes = marks;
-		return this;
-	}
-
-	public setDivider(divider: string): KVParser {
+	public withDivider(divider: string): this {
 		this.divider = divider;
 		return this;
 	}
 
-	public setEndingCharacters(chars: string[]): KVParser {
-		this.endingCharacters = chars;
+	public withStopCharacters(chars: string[]): this {
+		this.stopCharacters = chars;
 		return this;
 	}
 
-	public setParseWhitespaces(setting: boolean): KVParser {
+	public withQuotationMarks(marks: QuotationMarks[]): this {
+		this.allowedQuotes = marks;
+		return this;
+	}
+
+	public withEndingCharacters(chars: string[]): this {
+		this.stopCharacters = chars;
+		return this;
+	}
+
+	public withWhitespaces(setting: boolean): this {
 		this.parseWhitespace = setting;
+		return this;
+	}
+
+	public build(): KVParser {
 		return this;
 	}
 
@@ -39,7 +49,7 @@ class KVParser extends BaseParser<Map<string, string>> {
 		this.setTextToParse(stringToParse);
 		const result = new Map<string, string>();
 
-		while (!this.eof() && !this.endingCharacters.includes(this.peek())) {
+		while (!this.eof() && !this.stopCharacters.includes(this.peek())) {
 			this.skipOptionalWhitespace();
 			const key = this.parseName();
 			this.skipOptionalWhitespace();
@@ -52,9 +62,11 @@ class KVParser extends BaseParser<Map<string, string>> {
 
 			result.set(key, value);
 
-			if (this.endingCharacters.includes(this.peek())) {
+			if (this.pairSeperator && this.peek() === this.pairSeperator) {
 				this.consume();
 			}
+
+			this.skipOptionalWhitespace();
 		}
 		return result;
 	}
@@ -76,10 +88,11 @@ class KVParser extends BaseParser<Map<string, string>> {
 class Director {
 	public static constructCSSParser(): KVParser {
 		const parser = new KVParser()
-			.setDivider(":")
-			.setEndingCharacters([";", "}"])
-			.setParseWhitespaces(true)
-			.enableQuotationMarks([QuotationMarks.DOUBLE, QuotationMarks.SINGLE]);
+			.withDivider(":")
+			.withEndingCharacters([";", "}"])
+			.withWhitespaces(true)
+			.withQuotationMarks([QuotationMarks.DOUBLE, QuotationMarks.SINGLE])
+			.build();
 		return parser;
 	}
 }
