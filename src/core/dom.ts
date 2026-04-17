@@ -1,3 +1,4 @@
+// tests
 export interface Node {
 	// common to all nodes
 	children: Node[];
